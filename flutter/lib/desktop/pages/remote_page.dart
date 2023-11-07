@@ -25,6 +25,7 @@ import '../../utils/image.dart';
 import '../widgets/remote_toolbar.dart';
 import '../widgets/kb_layout_type_chooser.dart';
 import '../widgets/tabbar_widget.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 final SimpleWrapper<bool> _firstEnterImage = SimpleWrapper(false);
 
@@ -281,24 +282,23 @@ class _RemotePageState extends State<RemotePage>
                   },
                   inputModel: _ffi.inputModel,
                   child: getBodyForDesktop(context))),
-              Stack(
-                children: [
-                  _ffi.ffiModel.pi.isSet.isTrue &&
-                          _ffi.ffiModel.waitForFirstImage.isTrue
-                      ? emptyOverlay()
-                      : () {
-                          _ffi.ffiModel.tryShowAndroidActionsOverlay();
-                          return Offstage();
-                        }(),
-                  // Use Overlay to enable rebuild every time on menu button click.
-                  _ffi.ffiModel.pi.isSet.isTrue
-                      ? Overlay(initialEntries: [
-                          OverlayEntry(builder: remoteToolbar)
-                        ])
-                      : remoteToolbar(context),
-                  _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
-                ],
-              ),
+          Stack(
+            children: [
+              _ffi.ffiModel.pi.isSet.isTrue &&
+                      _ffi.ffiModel.waitForFirstImage.isTrue
+                  ? emptyOverlay()
+                  : () {
+                      _ffi.ffiModel.tryShowAndroidActionsOverlay();
+                      return Offstage();
+                    }(),
+              // Use Overlay to enable rebuild every time on menu button click.
+              _ffi.ffiModel.pi.isSet.isTrue
+                  ? Overlay(
+                      initialEntries: [OverlayEntry(builder: remoteToolbar)])
+                  : remoteToolbar(context),
+              _ffi.ffiModel.pi.isSet.isFalse ? emptyOverlay() : Offstage(),
+            ],
+          ),
         ],
       );
     }
@@ -571,28 +571,35 @@ class _ImagePaintState extends State<ImagePaint> {
             return cursorScale;
           }
 
-          return MouseRegion(
-              cursor: cursorOverImage.isTrue
-                  ? c.cursorEmbedded
-                      ? SystemMouseCursors.none
-                      : keyboardEnabled.isTrue
-                          ? (() {
-                              if (remoteCursorMoved.isTrue) {
-                                _lastRemoteCursorMoved = true;
-                                return SystemMouseCursors.none;
-                              } else {
-                                if (_lastRemoteCursorMoved) {
-                                  _lastRemoteCursorMoved = false;
-                                  _firstEnterImage.value = true;
+          if (kIsWeb) {
+            // running on the web!
+            return MouseRegion(
+                cursor: MouseCursor.defer, onHover: (evt) {}, child: child);
+          } else {
+            // NOT running on the web! You can check for additional platforms here.
+            return MouseRegion(
+                cursor: cursorOverImage.isTrue
+                    ? c.cursorEmbedded
+                        ? SystemMouseCursors.none
+                        : keyboardEnabled.isTrue
+                            ? (() {
+                                if (remoteCursorMoved.isTrue) {
+                                  _lastRemoteCursorMoved = true;
+                                  return SystemMouseCursors.none;
+                                } else {
+                                  if (_lastRemoteCursorMoved) {
+                                    _lastRemoteCursorMoved = false;
+                                    _firstEnterImage.value = true;
+                                  }
+                                  return _buildCustomCursor(
+                                      context, getCursorScale());
                                 }
-                                return _buildCustomCursor(
-                                    context, getCursorScale());
-                              }
-                            }())
-                          : _buildDisabledCursor(context, getCursorScale())
-                  : MouseCursor.defer,
-              onHover: (evt) {},
-              child: child);
+                              }())
+                            : _buildDisabledCursor(context, getCursorScale())
+                    : MouseCursor.defer,
+                onHover: (evt) {},
+                child: child);
+          }
         });
 
     if (c.imageOverflow.isTrue && c.scrollStyle == ScrollStyle.scrollbar) {

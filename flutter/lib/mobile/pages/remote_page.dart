@@ -21,6 +21,7 @@ import '../../models/input_model.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../../utils/image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 final initText = '1' * 1024;
 
@@ -319,7 +320,11 @@ class _RemotePageState extends State<RemotePage> {
   Widget getRawPointerAndKeyBody(Widget child) {
     final keyboard = gFFI.ffiModel.permissions['keyboard'] != false;
     return RawPointerMouseRegion(
-      cursor: keyboard ? SystemMouseCursors.none : MouseCursor.defer,
+      cursor: kIsWeb
+          ? MouseCursor.defer
+          : keyboard
+              ? SystemMouseCursors.none
+              : MouseCursor.defer,
       inputModel: inputModel,
       // Disable RawKeyFocusScope before the connecting is established.
       // The "Delete" key on the soft keyboard may be grabbed when inputting the password dialog.
